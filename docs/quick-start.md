@@ -6,20 +6,26 @@ The default acceptance mode uses controlled endpoints and is not real inference 
 
 ## Install
 
-Install the built release wheel into a dedicated environment outside the source tree. Alternatively, the package path may be a checked-out release tree. This does not install a system service or modify system Python:
+Prerequisites: Git, curl, Python 3.13+, and [uv](https://docs.astral.sh/uv/getting-started/installation/). The commands below use uv so they also work when the system Python lacks `ensurepip`. Clone the public source and install into a dedicated environment outside it. This does not install a system service or modify system Python:
 
 ```sh
-python3.13 -m venv "$HOME/.local/venvs/voice-note-intake"
-"$HOME/.local/venvs/voice-note-intake/bin/python" -m pip install /path/to/voice_note_intake-0.1.0-py3-none-any.whl
-# Without ensurepip: uv venv --python python3.13 "$HOME/.local/venvs/voice-note-intake"
-# Then: uv pip install --python "$HOME/.local/venvs/voice-note-intake/bin/python" /path/to/release.whl
+git clone https://github.com/dpotts34/local-voice-notes.git
+cd local-voice-notes
+SOURCE_DIR="$(pwd -P)"
+uv venv --python python3.13 "$HOME/.local/venvs/voice-note-intake"
+uv pip install --python "$HOME/.local/venvs/voice-note-intake/bin/python" "$SOURCE_DIR"
+uv pip check --python "$HOME/.local/venvs/voice-note-intake/bin/python"
 ```
+
+If you already cloned the repository, start with `cd` into its root instead of cloning again. You can install a separately built wheel by replacing `"$SOURCE_DIR"` with its path. Without uv, use `python3.13 -m venv` followed by the environment's `python -m pip install`; that requires your distribution's venv/ensurepip support.
+
+Before configuring real services, run the [controlled installed-service check](#verify-the-installation). It builds and installs a fresh wheel and tests the HTTP-to-note flow using disposable local fixtures; no GPU, real ASR/LLM, or ntfy installation is required for this check. A passing check proves the intake installation, not the real services.
 
 The ASR service must accept multipart audio at the configured URL and return JSON with a nonempty `text`. The LLM endpoint must implement the OpenAI-compatible chat-completions request and return the required structured note JSON. The notification URL is an ntfy topic endpoint whose publish response includes an event ID. Choose audio formats accepted by your ASR service; intake archives and forwards the original upload unchanged.
 
 ## Configure and start
 
-Create the directories you chose for the archive and vault, then copy the example environment file and edit it. All endpoint/model values and the archive/vault paths are required; empty placeholders intentionally fail startup.
+Create the directories you chose for the archive and vault, then copy the example environment file and edit it. The vault is a Markdown directory; Obsidian itself is optional. All endpoint/model values and the archive/vault paths are required; empty placeholders intentionally fail startup.
 
 ```sh
 mkdir -p "$HOME/.config/voice-note-intake" \
@@ -29,8 +35,9 @@ mkdir -p "$HOME/.config/voice-note-intake" \
 # change permissions only if you own it and selected it for this service.
 mkdir -p -m 700 "$HOME/.local/state/voice-note-intake"
 chmod 700 "$HOME/.local/state/voice-note-intake"
-cp /path/to/voice-note-intake/deploy/voice-note-intake.env.example \
+cp "$SOURCE_DIR/deploy/voice-note-intake.env.example" \
   "$HOME/.config/voice-note-intake/env"
+chmod 600 "$HOME/.config/voice-note-intake/env"
 # Edit the env file: set your endpoint URLs, model, and paths.
 set -a
 . "$HOME/.config/voice-note-intake/env"
@@ -39,6 +46,12 @@ set +a
 ```
 
 The default listener is `127.0.0.1:8791`; `GET /health` returns `200` only when state, spool, archive, vault/inbox, database, and worker are ready. Readiness reports upstreams as unprobed; it does not promise that inference endpoints are reachable. Missing required settings produce a startup error naming the setting.
+
+Leave the service running in that terminal. In a second terminal, check readiness before uploading:
+
+```sh
+curl --fail-with-body http://127.0.0.1:8791/health
+```
 
 `VOICE_REQUIRE_NFS_MOUNT=false` is the intentional local-directory archive mode. To require NFS, set it to `true`: readiness and archive writes then require the configured archive directory itself to be an `nfs`/`nfs4` mount. A normal directory beneath a mount-looking path does not satisfy that check.
 
@@ -114,23 +127,27 @@ The archive cap defaults to 5 GiB (`VOICE_ARCHIVE_MAX_BYTES=5368709120`) with no
 
 Read-only validation and opt-in Git publication use the explicitly selected vault boundary. Publication is off by default; never select a source-repository remote.
 
+## Verify the installation
+
 The installed-distribution controlled acceptance check is [`../tests/check_installed_intake.py`](../tests/check_installed_intake.py). It validates the complete HTTP flow against local controlled ASR/LLM/notification fixtures; it is not a substitute for acceptance against real inference services.
 
-To build and install outside the release tree, then run the single high-level check:
+From the root of your cloned checkout, build and install outside the source tree, then run the single high-level check:
 
 ```sh
+SOURCE_DIR="$(pwd -P)"
 CHECK_TMP="$(mktemp -d)"
-uv build --wheel --out-dir "$CHECK_TMP/dist" /path/to/voice-note-intake
-python3.13 -m venv "$CHECK_TMP/venv"
-"$CHECK_TMP/venv/bin/python" -m pip install "$CHECK_TMP"/dist/*.whl
-"$CHECK_TMP/venv/bin/python" /path/to/voice-note-intake/tests/check_installed_intake.py \
+uv build --wheel --out-dir "$CHECK_TMP/dist" "$SOURCE_DIR"
+uv venv --python python3.13 "$CHECK_TMP/venv"
+uv pip install --python "$CHECK_TMP/venv/bin/python" "$CHECK_TMP"/dist/*.whl
+uv pip check --python "$CHECK_TMP/venv/bin/python"
+"$CHECK_TMP/venv/bin/python" "$SOURCE_DIR/tests/check_installed_intake.py" \
   --executable "$CHECK_TMP/venv/bin/voice-note-intake" \
   --work-dir "$CHECK_TMP/runs" --evidence "$CHECK_TMP/controlled-e2e.json"
 ```
 
 The check uses only ephemeral loopback fixture endpoints and fresh disposable paths. It includes abrupt restart after HTTP 202, identical/different-audio duplicate retries, controlled ASR/LLM HTTP 503 outages, invalid structured responses, notification failures/history recovery, protected-output refusal, and zero-cap retention with unfinished/failed/unresolved recordings. `VOICE_MAX_RETRIES=2` bounds the controlled failure scenarios. It also checks 27 installed-validator cases and publication against disposable local bare remotes (including refusal/recovery cases and the HTTP worker). Its JSON evidence labels controlled endpoints, not real inference or confirmed phone delivery; retained logs/state/stashes and absolute run paths are private evidence, not publication artifacts.
 
-On systems without Python's `ensurepip`/venv package, use `uv venv --python python3.13 "$CHECK_TMP/venv"` and `uv pip install --python "$CHECK_TMP/venv/bin/python" "$CHECK_TMP"/dist/*.whl` instead of the two venv/pip commands above. Keep `CHECK_TMP` outside the release tree; `mktemp` honors your configured `TMPDIR`.
+The check exits with status `0` and writes a JSON result with `"result": "PASS"` when successful. Keep `CHECK_TMP` outside the source tree; `mktemp` honors your configured `TMPDIR`. Retain its JSON and private run logs when investigating a failure; do not commit them. For a standard-library venv/pip installation, replace the two uv installation commands with `python3.13 -m venv` and the environment's `python -m pip install` if your distribution provides ensurepip.
 
 ### Opt-in real-inference acceptance
 
@@ -141,7 +158,7 @@ export VOICE_ASR_URL='http://<your-asr-service>/v1/audio/transcriptions'
 export VOICE_LLM_URL='http://<your-llm-service>/v1/chat/completions'
 export VOICE_LLM_MODEL='<your-loaded-model>'
 export VOICE_HTTP_TIMEOUT=60 VOICE_LLM_PRIMARY_TIMEOUT=60
-"$CHECK_TMP/venv/bin/python" /path/to/voice-note-intake/tests/check_installed_intake.py \
+"$CHECK_TMP/venv/bin/python" "$SOURCE_DIR/tests/check_installed_intake.py" \
   --executable "$CHECK_TMP/venv/bin/voice-note-intake" \
   --real-audio /private/path/to/synthetic-known-speech.wav \
   --expect-words return library books --real-timeout 180 \
