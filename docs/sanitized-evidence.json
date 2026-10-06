@@ -1,0 +1,135 @@
+{
+  "result": "Real clean-install acceptance PASS; explicit preserved-check exclusions",
+  "candidate_revision": "Unversioned sanitized source tree; no release Git history initialized",
+  "wheel": {
+    "filename": "voice_note_intake-0.1.0-py3-none-any.whl",
+    "sha256": "a611f42310c326d0296af87cdd9200a239c0ee73af5fd593ab2e14befee4c96a",
+    "final_rebuild_identical": true
+  },
+  "source_tree": {
+    "sha256": "ac8e04ceef1fde97cc848d0d64aa096d519785a5556cfdd3b9cacc928e946baf",
+    "algorithm": "SHA256 of sorted UTF-8 lines: <file sha256>  <POSIX relative filename>\n; excludes __pycache__, .git, .pytest_cache",
+    "files": {
+      ".gitignore": "76d4b8c867e81243c2a7ed279bf50b0de762f3df791725854dacb5c64d2b3aae",
+      "README.md": "5098be8e83317d374c8bff62ce1a0d1190d323053e401b377ca6fc63ebcb00f8",
+      "deploy/voice-note-intake.env.example": "6e1dd6d3df86daf017240938c5f2c1a97311914ff1da532babc36d4b53edf0a6",
+      "docs/ios-shortcut.md": "9bc9e073c408d9a4670fc8da3ca2b6091082d425a9b043e7bacb5eafe0b3c56a",
+      "docs/quick-start.md": "c99a593a2c3e37feba577428ae88b3e3a39a2e17370ca5302fbd4b9e2c2742e8",
+      "pyproject.toml": "056e683ce51b73634fa682ac8f8d358e622b91debb9c05b16f36be676c7236c1",
+      "src/voice_note_intake/__init__.py": "1e37b75beab22d8f1fdd42a4f2d1076cfe673a4fa4a777a71365e6ad1d5ceb56",
+      "src/voice_note_intake/api.py": "8003a5fcb5f8ff03dd6d9f2739ba4366bade6c6f3eaaa15449d17cc8f1cd1196",
+      "src/voice_note_intake/clients.py": "7266bd66040fa9e9d3c000d163a8c34900d68c7c2c37662b415f8ed136288a9a",
+      "src/voice_note_intake/config.py": "704c74f57e4dfadbea551f4bcbb816f5794d06247fe7a845382e94304ccf944f",
+      "src/voice_note_intake/lint_vault.py": "c1b8e10c1159d0d635eb1e31495d588b01df583c5d8d7b6ed7ecb70bcb5ea154",
+      "src/voice_note_intake/main.py": "2a5fcc0bd5c4deedb735883e96cd094b9184cc86008d4e158e671d1211b8163f",
+      "src/voice_note_intake/mounts.py": "6bee296f93040ea5c172e09f61b456e3432b8c1cb641217b4d717b9c065638b1",
+      "src/voice_note_intake/note_action.py": "f3f4ac38d50f947e408194dbbabc6d8b3aadf439ebef63810c1ef9a157cf9366",
+      "src/voice_note_intake/spool.py": "a3ed577bd7d5ac6ac81cb7cf185cdbd0afab07a7f5d04519618dfaf28a074ab0",
+      "src/voice_note_intake/store.py": "978eb71d5b9e133b85eb4fd350237e6e5b464060f06bcfa66ee7605b0a5f26a8",
+      "src/voice_note_intake/vault_sync.py": "70533792f3659a075b067034921a0f6fa46e95e5856834c235c3fd65c2e036e1",
+      "src/voice_note_intake/worker.py": "f5900d21135c1789019b145eee4f32fd4da77053b446501bf6377bda2ae59c67",
+      "src/voice_note_intake/writer.py": "600dbf87748091ca94035c41b874ae6a7f1cf7c8907197a6f0ff0099fbc3147b",
+      "tests/check_installed_intake.py": "314fa9314b79b7466111b4a8e4eb1e52d56c5b109bda9317dc02c40f11079654"
+    }
+  },
+  "environment": {
+    "python": "3.13.5",
+    "system": "Linux",
+    "release": "6.12.100+deb13-amd64",
+    "packages": {
+      "frozenlist": "1.8.0",
+      "yarl": "1.25.1",
+      "multidict": "6.9.1",
+      "aiohttp": "3.14.3",
+      "mdurl": "0.1.2",
+      "aiosignal": "1.4.0",
+      "propcache": "0.5.4",
+      "idna": "3.20",
+      "voice-note-intake": "0.1.0",
+      "markdown-it-py": "4.2.0",
+      "aiohappyeyeballs": "2.7.1",
+      "attrs": "26.1.0",
+      "PyYAML": "6.0.3"
+    },
+    "uv": "0.11.2",
+    "ffmpeg": "7.1.5-0+deb13u1"
+  },
+  "real": {
+    "result": "PASS",
+    "checks": [
+      "clean installed distribution imports from external environment, no source/Hermes path",
+      "documented private state setup and loopback readiness",
+      "known-speech WAV accepted durably with HTTP 202",
+      "actual ASR transcript and model-generated note/thread preserve known-speech meaning",
+      "spool/archive bytes and SHA-256 match submitted synthetic speech",
+      "installed whole-vault validator accepts actual generated outputs",
+      "installed standalone publication verifies exact disposable remote HEAD",
+      "controlled notification captured/read back exact ID after exact remote note/thread bytes",
+      "durable completion, stored note hash and notification event survive process stop"
+    ],
+    "check_count": 9,
+    "real_asr": true,
+    "real_structured_llm": true,
+    "llm_model": "qwen-9b",
+    "audio": "User-consented synthetic nonprivate known speech; streaming TTS WAV header normalized to PCM WAV with ffmpeg",
+    "audio_sha256": "3358e7c22561240815ed76c2ddc2f3a7e3bd6c6e86de2a216f089d7e9b1add85",
+    "audio_bytes": 162670,
+    "note_sha256": "abf3e6f1f7970c77b52f8274591103239a903c919abff63975c870451eab0825",
+    "disposable_remote_head": "de5e47f4e781f1f67308a89452d774a651e06b26",
+    "retry_count": 0,
+    "notification": "Controlled loopback receipt after exact remote HEAD and note/thread bytes; exact-ID read-back; not phone delivery",
+    "semantic_review": "Actual transcript, note, linked thread summary and notification reviewed. Reminder subject, requested return action and relative next-day timing preserved; no private human/user content used."
+  },
+  "controlled": {
+    "result": "PASS",
+    "check_count": 116,
+    "validator_count": 27,
+    "sync_count": 62
+  },
+  "preserved": {
+    "completed_passes": 176,
+    "exclusions": [
+      {
+        "check": "test_deploy.py::test_user_unit_uses_portable_home_specifiers",
+        "reason": "Private deployment service, Hermes environment file and fixed NFS/vault paths are intentionally not shipped."
+      },
+      {
+        "check": "test_vault_sync.py::test_sync_lints_and_publishes_all_existing_hermes_changes",
+        "reason": "Legacy inferred-origin/external lint interpreter and broad Hermes-vault publication are intentionally unsupported. Installed restricted publication has controlled and real-worker coverage."
+      },
+      {
+        "check": "test_config.py::test_defaults_match_runtime_contract",
+        "reason": "Asserts removed private address/model/Hermes directories and mandatory NFS defaults. Portable startup configuration/defaults pass the installed high-level gate."
+      },
+      {
+        "check": "test_app.py::test_cleanup_promptly_cancels_stalled_transcription",
+        "reason": "Fails its one-second ASR-start setup wait before testing cleanup on this host. No one-second startup latency is promised. Installed bounded cleanup/restart and other cancellation tests passed."
+      },
+      {
+        "check": "test_store.py::test_claim_lease_starts_after_waiting_for_write_lock",
+        "reason": "Requires a 0.1-second artificial lease to remain live after durable SQLite commit. Measured fsync took 0.125-0.419 seconds. This subsecond timing expectation is not a portable guarantee; ordinary 300-second worker ownership and other lease/fencing tests passed. Runtime was not modified to mask host latency."
+      }
+    ],
+    "bounded_execution": "Nine unchanged original files against installed wheel; 145 completed passes before 480-second aggregate bound; only unfinished cases continued, 31 passed in 95.22 seconds, no overlap. Earlier timeout/failure diagnostics retained privately. Not an all-181 PASS."
+  },
+  "changes": [
+    "tests/check_installed_intake.py",
+    "docs/quick-start.md",
+    "docs/ios-shortcut.md"
+  ],
+  "runtime_changes": false,
+  "initial_attempt": "Real job completed; literal temporal-token matching in its paraphrased summary caused an acceptance false negative. Documented semantic anchors corrected and actual meaning reviewed. Both attempts retained.",
+  "limits": [
+    "No iPhone/device/Shortcut transport or phone-display test",
+    "Local notification capture, not external/production ntfy",
+    "No fallback or real NFS test",
+    "Only synthetic WAV codec and selected services tested",
+    "No production deployment, vault/topic write, network or service change, source/public push, license selection or issue closure",
+    "Two subsecond legacy timing expectations excluded explicitly; no complete legacy all-green claim"
+  ],
+  "build_install_command": "uv build --wheel --out-dir \"$PRIVATE/dist\" \"$SOURCE\"; uv venv --python python3.13 \"$PRIVATE/venv\"; uv pip install --python \"$PRIVATE/venv/bin/python\" \"$PRIVATE/dist/voice_note_intake-0.1.0-py3-none-any.whl\"",
+  "real_command": "export VOICE_ASR_URL=\"$OPERATOR_ASR_URL\" VOICE_LLM_URL=\"$OPERATOR_LLM_URL\" VOICE_LLM_MODEL=\"$OPERATOR_MODEL\" VOICE_HTTP_TIMEOUT=60 VOICE_LLM_PRIMARY_TIMEOUT=60; \"$PRIVATE/venv/bin/python\" \"$SOURCE/tests/check_installed_intake.py\" --executable \"$PRIVATE/venv/bin/voice-note-intake\" --real-audio \"$KNOWN_NONPRIVATE_WAV\" --expect-words $SEMANTIC_ANCHORS --real-timeout 180 --work-dir \"$PRIVATE/real-runs\" --evidence \"$PRIVATE/real-e2e.json\"",
+  "controlled_command": "\"$PRIVATE/venv/bin/python\" \"$SOURCE/tests/check_installed_intake.py\" --executable \"$PRIVATE/venv/bin/voice-note-intake\" --work-dir \"$PRIVATE/controlled-runs\" --evidence \"$PRIVATE/controlled-e2e.json\"",
+  "preserved_command": "timeout 480 \"$TEST_VENV/bin/python\" -m pytest -c /dev/null -p no:cacheprovider --import-mode=importlib --asyncio-mode=auto --basetemp=\"$PRIVATE/preserved-tmp\" -o faulthandler_timeout=45 \"$LEGACY_TESTS/test_api.py\" \"$LEGACY_TESTS/test_app.py\" \"$LEGACY_TESTS/test_clients.py\" \"$LEGACY_TESTS/test_config.py\" \"$LEGACY_TESTS/test_mounts.py\" \"$LEGACY_TESTS/test_note_rules.py\" \"$LEGACY_TESTS/test_store.py\" \"$LEGACY_TESTS/test_worker.py\" \"$LEGACY_TESTS/test_writer.py\" -k \"not test_defaults_match_runtime_contract and not test_cleanup_promptly_cancels_stalled_transcription and not test_claim_lease_starts_after_waiting_for_write_lock\" -vv --tb=short -r f --maxfail=1; continue only unfinished cases if global bound expires",
+  "provenance": "Runtime sources byte-identical to frozen issue-6 baseline; final wheel rebuilt byte-identical to installed wheel. No active owned trial processes after cleanup. Parent review required before closure."
+}

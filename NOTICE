@@ -1,0 +1,19 @@
+Local Voice Pipeline
+Copyright 2026 dpotts34
+
+Original project code, documentation, checks, speech proxies and local patch
+contributions are licensed under the Apache License, Version 2.0.
+Existing third-party material retains its own licenses and copyright notices.
+
+The optional native patch supplied with the source release modifies
+NVIDIA NeMo-Speech.cpp, whose pinned source carries this attribution:
+Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+The upstream LICENSE, NOTICE and THIRD_PARTY_NOTICES.md are retained verbatim
+under patches/licenses/. They apply to their stated upstream material and do
+not imply that its full dependency tree is bundled by this project.
+The Python wheel does not contain the native patch or native runtime.
+
+Separately installed tools, Python dependencies, inference services and model
+weights are governed by their own terms, not by this project's license.
+See THIRD_PARTY_NOTICES.md for credits, distribution scope and verification limits.

@@ -1,0 +1,28 @@
+diff --git a/src/asr/recognizer.cpp b/src/asr/recognizer.cpp
+index 3699234..abd80d3 100644
+--- a/src/asr/recognizer.cpp
++++ b/src/asr/recognizer.cpp
+@@ -1,3 +1,5 @@
+ // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ // SPDX-License-Identifier: Apache-2.0
++// Modified by dpotts34 (2026): route long GPU transducer input through supported
++// cache streaming. Original upstream copyright and license are unchanged.
+ #include "recognizer.h"
+@@ -483,9 +485,15 @@ Recognizer::recognize(
+     const bool supports_streaming =
+         model_->head_kind() == HeadKind::Ctc ||
+         static_cast<RnntModel*>(model_.get())->supports_cache_streaming();
++    // Keep offline GPU transducer input bounded; use streaming for longer input.
++    constexpr size_t kOfflineTransducerLimitSeconds = 10;
++    const int input_rate = sample_rate > 0 ? sample_rate : model_->sample_rate();
++    const bool long_gpu_transducer =
++        gpu != nullptr && model_->head_kind() != HeadKind::Ctc && input_rate > 0 &&
++        n > static_cast<size_t>(input_rate) * kOfflineTransducerLimitSeconds;
+     std::unique_ptr<AsrRunner> runner;
+-    if ((exceeds_offline_limit || (vulkan && model_->head_kind() != HeadKind::Ctc)) &&
+-        supports_streaming) {
++    if ((exceeds_offline_limit || long_gpu_transducer ||
++         (vulkan && model_->head_kind() != HeadKind::Ctc)) && supports_streaming) {
+         runner = make_runner();
+     } else {
+         // Past the positional-encoding limit OfflineRunner splits the audio at
