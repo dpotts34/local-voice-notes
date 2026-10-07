@@ -8,6 +8,11 @@ license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.13"
 dependencies = ["aiohttp>=3.11,<4", "PyYAML>=6,<7", "markdown-it-py>=3,<5"]
 
+[project.urls]
+Repository = "https://github.com/dpotts34/local-voice-notes"
+Documentation = "https://github.com/dpotts34/local-voice-notes/blob/main/docs/quick-start.md"
+Issues = "https://github.com/dpotts34/local-voice-notes/issues"
+
 [project.scripts]
 voice-note-intake = "voice_note_intake.main:main"
 voice-vault-lint = "voice_note_intake.lint_vault:main"

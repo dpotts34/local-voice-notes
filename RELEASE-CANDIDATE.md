@@ -1,4 +1,6 @@
-# Local Voice Pipeline — local release candidate
+# Local Voice Pipeline — historical release preparation
+
+This is the prepublication preparation record, not the current publication status. The maintainer later approved publication of the [initial public commit](https://github.com/dpotts34/local-voice-notes/commit/b1a86e207862ca12c1c5b7fdf60be294c14d2ea8); an anonymous clone and a byte-identical wheel rebuild verified it. Start with the current [README](README.md) and [quick start](docs/quick-start.md). The pending gates below describe what remained before that approval.
 
 - [Supported voice-note intake](README.md): Linux, Python 3.13+, operator-selected ASR/structured-LLM/notification endpoints. Build the Python package from this repository root. The reviewed intake files retain their original relative layout, including the source-checkout refusal marker `src/voice_note_intake`.
 - [Advanced standalone speech proxies](proxies/README.md): standard-library Python and FFmpeg; controlled conversion/API acceptance only.
