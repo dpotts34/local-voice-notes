@@ -1,12 +1,22 @@
-# Local Voice Pipeline — historical release preparation
+# Historical release preparation
 
-This is the prepublication preparation record, not the current publication status. The maintainer later approved publication of the [initial public commit](https://github.com/dpotts34/local-voice-notes/commit/b1a86e207862ca12c1c5b7fdf60be294c14d2ea8); an anonymous clone and a byte-identical wheel rebuild verified it. Start with the current [README](README.md) and [quick start](docs/quick-start.md). The pending gates below describe what remained before that approval.
+Old preparation record. Not current status. Start with the [README](README.md) or [quick start](docs/quick-start.md).
 
-- [Supported voice-note intake](README.md): Linux, Python 3.13+, operator-selected ASR/structured-LLM/notification endpoints. Build the Python package from this repository root. The reviewed intake files retain their original relative layout, including the source-checkout refusal marker `src/voice_note_intake`.
-- [Advanced standalone speech proxies](proxies/README.md): standard-library Python and FFmpeg; controlled conversion/API acceptance only.
-- [Selected native patch](patches/README.md): pinned NeMo-Speech.cpp source application only, not a GPU build or inference result.
-- [Prior intake acceptance](docs/sanitized-evidence.md) and [exact tested intake manifest](docs/sanitized-evidence.json): real ASR/LLM on consented synthetic WAV, controlled notification receipt, explicit limits and legacy exclusions. These identify the tested **intake subtree/wheel**, not a final release commit or this assembled tree.
+The maintainer later approved the [initial public commit](https://github.com/dpotts34/local-voice-notes/commit/b1a86e207862ca12c1c5b7fdf60be294c14d2ea8). An anonymous clone and identical package rebuild verified publication.
 
-Listeners default to loopback. This is a single-user trusted-network system with no application-layer authentication or built-in TLS; do not expose it to the internet. No models, runtime binaries, recordings, generated notes, state or deployment environments are bundled.
+## Included components
 
-**NOT APPROVED FOR PUBLICATION.** The maintainer confirmed personal-project ownership, chose Apache-2.0 for original contributions, and approved both proxies and the selected native patch. Project [LICENSE](LICENSE), [NOTICE](NOTICE), and [third-party credits](THIRD_PARTY_NOTICES.md) retain the distinct upstream terms. The Python package metadata now includes those notices; its rebuilt wheel has a new digest, while runtime source remains unchanged. Prior evidence describes its original tested artifact, not a new real-inference run. The maintainer selected `dpotts34/local-voice-notes`, supplied the public identity `dpotts34 <65884710+dpotts34@users.noreply.github.com>`, and authorized a fresh local root commit, `Initial sanitized source release`. The frozen source/wheel review passed; the new history and its revision-bound report require separate verification. Publication of the exact audited revision still needs explicit approval; component acceptance and local history creation do not authorize it.
+- [Intake](README.md). Linux, Python 3.13+. User-selected speech-recognition, language-model, and notification services. Build from the repository root. Preserve `src/voice_note_intake`, which prevents note publication from a source checkout.
+- [Speech proxies](proxies/README.md). Python standard library and FFmpeg. Local conversion/API tests only.
+- [Native patch](patches/README.md). Applied to one NeMo-Speech.cpp revision. No GPU build or inference test.
+- [Earlier test results](docs/sanitized-evidence.md) and [file manifest](docs/sanitized-evidence.json). Real speech recognition and language model, synthetic WAV, local notification receiver. Cover the tested intake files and package, not the later assembled release.
+
+Single user. Loopback by default. No authentication or TLS. Never expose directly to the internet. No models, runtime binaries, recordings, notes, state, or deployment settings bundled.
+
+## Approval state before publication
+
+At this stage, publication was not approved. The maintainer confirmed personal ownership and Apache-2.0 for original work, including both proxies and the patch. Upstream terms remain separate. See [LICENSE](LICENSE), [NOTICE](NOTICE), and [credits](THIRD_PARTY_NOTICES.md).
+
+Adding notices changed the package checksum, not runtime code. Earlier inference evidence still described the older package.
+
+The maintainer selected `dpotts34/local-voice-notes`, identity `dpotts34 <65884710+dpotts34@users.noreply.github.com>`, and root commit message `Initial sanitized source release`. Source/package review passed. New history and its report still needed verification, then explicit publication approval. Component checks and local commits alone did not authorize publication.

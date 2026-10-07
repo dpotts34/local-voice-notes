@@ -1,12 +1,12 @@
 # Quick start
 
-This release tree supports the durable voice-note intake service on Linux with Python 3.13 or later. Runtime Python dependencies are declared in `pyproject.toml`; no Hermes installation or GPU/runtime installer is required on the intake host. You need writable local state, an archive directory, an output vault, and compatible ASR, structured-LLM, and ntfy HTTP endpoints.
+Linux, Python 3.13+. Dependencies in `pyproject.toml`. No Hermes needed. Intake does not install models. Provide writable state, archive, and note directories, plus compatible speech-recognition, language-model, and ntfy services. Below, ASR means speech recognition; LLM means language model; vault means note directory.
 
-The default acceptance mode uses controlled endpoints and is not real inference or phone-delivery evidence. The same check has an opt-in real-ASR/LLM mode below; it still captures notifications locally and does not test a phone. A real installation needs your own endpoint implementations and model choices.
+Default tests use local substitutes, no GPU. Real-inference tests still receive notifications locally. Neither tests phone delivery.
 
 ## Install
 
-Prerequisites: Git, curl, Python 3.13+, and [uv](https://docs.astral.sh/uv/getting-started/installation/). The commands below use uv so they also work when the system Python lacks `ensurepip`. Clone the public source and install into a dedicated environment outside it. This does not install a system service or modify system Python:
+Install Git, curl, Python 3.13+, and [uv](https://docs.astral.sh/uv/getting-started/installation/). Install outside source. No system Python changes, service installation, or `ensurepip` needed.
 
 ```sh
 git clone https://github.com/dpotts34/local-voice-notes.git
@@ -17,15 +17,21 @@ uv pip install --python "$HOME/.local/venvs/voice-note-intake/bin/python" "$SOUR
 uv pip check --python "$HOME/.local/venvs/voice-note-intake/bin/python"
 ```
 
-If you already cloned the repository, start with `cd` into its root instead of cloning again. You can install a separately built wheel by replacing `"$SOURCE_DIR"` with its path. Without uv, use `python3.13 -m venv` followed by the environment's `python -m pip install`; that requires your distribution's venv/ensurepip support.
+Already cloned? Start with `cd` into the root. Installing a wheel package? Replace `"$SOURCE_DIR"` with its path. Without uv, use `python3.13 -m venv`, then that environment's `python -m pip install`. Requires venv/ensurepip support.
 
-Before configuring real services, run the [controlled installed-service check](#verify-the-installation). It builds and installs a fresh wheel and tests the HTTP-to-note flow using disposable local fixtures; no GPU, real ASR/LLM, or ntfy installation is required for this check. A passing check proves the intake installation, not the real services.
+First [verify installation](#verify-the-installation). Builds a fresh package and tests upload-to-note flow with local substitutes. Proves intake works, not your real services.
 
-The ASR service must accept multipart audio at the configured URL and return JSON with a nonempty `text`. The LLM endpoint must implement the OpenAI-compatible chat-completions request and return the required structured note JSON. The notification URL is an ntfy topic endpoint whose publish response includes an event ID. Choose audio formats accepted by your ASR service; intake archives and forwards the original upload unchanged.
+Endpoint requirements:
+
+- ASR accepts multipart audio and returns JSON with nonempty `text`.
+- LLM accepts OpenAI-compatible chat-completions requests and returns the required note JSON.
+- ntfy returns an event ID when publishing to a topic.
+
+Use audio your ASR accepts. Intake saves and forwards it unchanged.
 
 ## Configure and start
 
-Create the directories you chose for the archive and vault, then copy the example environment file and edit it. The vault is a Markdown directory; Obsidian itself is optional. All endpoint/model values and the archive/vault paths are required; empty placeholders intentionally fail startup.
+Create archive and vault directories. Obsidian optional. Copy the settings file. Edit URLs, model, and paths before starting. Empty required values stop startup.
 
 ```sh
 mkdir -p "$HOME/.config/voice-note-intake" \
@@ -45,21 +51,21 @@ set +a
 "$HOME/.local/venvs/voice-note-intake/bin/voice-note-intake"
 ```
 
-The default listener is `127.0.0.1:8791`; `GET /health` returns `200` only when state, spool, archive, vault/inbox, database, and worker are ready. Readiness reports upstreams as unprobed; it does not promise that inference endpoints are reachable. Missing required settings produce a startup error naming the setting.
+Default address `127.0.0.1:8791`. `GET /health` returns `200` when state, upload storage, archive, vault/inbox, database, and worker are ready. It does not check upstream services. Startup errors name missing settings.
 
-Leave the service running in that terminal. In a second terminal, check readiness before uploading:
+Leave intake running. Check health in another terminal:
 
 ```sh
 curl --fail-with-body http://127.0.0.1:8791/health
 ```
 
-`VOICE_REQUIRE_NFS_MOUNT=false` is the intentional local-directory archive mode. To require NFS, set it to `true`: readiness and archive writes then require the configured archive directory itself to be an `nfs`/`nfs4` mount. A normal directory beneath a mount-looking path does not satisfy that check.
+`VOICE_REQUIRE_NFS_MOUNT=false` permits local archives. Set `true` to require an `nfs`/`nfs4` network-filesystem mount for readiness and writes. The archive directory must itself be the mount, not a subdirectory.
 
-For a phone or another trusted LAN client, loopback is not reachable remotely. Set `VOICE_BIND_HOST` to the service host's private interface address and restrict access with the host/network firewall. This service has no application-layer authentication; do not expose it to the public internet or an untrusted network. There is no built-in TLS or access-control layer.
+Phones cannot reach loopback. Set `VOICE_BIND_HOST` to a private interface address. Restrict access with a firewall. No built-in authentication, TLS, or access controls. Never expose intake to the internet or untrusted networks.
 
 ## Upload and check status
 
-Use a new canonical UUID for each new recording. For a new thread, use that same UUID as `thread_id`. Reuse a request ID only to retry the exact same retained audio after an ambiguous upload result.
+New recording, new canonical UUID. New thread, same UUID for `thread_id`. Unclear upload result? Retry identical saved audio with its original request ID.
 
 ```sh
 REQUEST_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
@@ -70,30 +76,32 @@ curl --fail-with-body "http://127.0.0.1:8791/v1/jobs/$REQUEST_ID"
 curl --fail-with-body 'http://127.0.0.1:8791/v1/threads?limit=10'
 ```
 
-The upload returns HTTP `202` after the original audio and SQLite job are durable. It does not mean transcription/note creation is complete. Poll the job endpoint for `completed` or `failed`. Notes are create-only under the exact vault-relative `Voice Inbox/`; the service will not overwrite an existing unrelated file. A `Voice Threads/<thread_id>.md` index groups notes by ID, but ID reuse does not provide conversation history to the LLM.
+HTTP `202` means audio and SQLite job saved, not completed. Poll for `completed` or `failed`. Notes are create-only in `Voice Inbox/`. No unrelated files overwritten. `Voice Threads/<thread_id>.md` groups notes. Shared thread IDs do not give the LLM earlier conversation.
 
-Completion/failure notifications include a note path and concise summary, not raw audio or transcript. Cached-history recovery reduces duplicate delivery, but ntfy does not provide an idempotency key; cache expiry/truncation can leave a duplicate-delivery window. A published event ID does not prove that a phone received or displayed it.
+Completion/failure notifications contain a note path and summary, no audio or transcript. ntfy event-cache lookup reduces duplicates. No idempotency key, duplicates remain possible after cache expiry/truncation. Saved event IDs do not prove phone delivery.
 
-`VOICE_MAX_RETRIES` defaults to `3`: this is the shared count of processing failures across archive, ASR, formatting, writing, and completion notification, not three attempts per stage. Retries wait `min(2**retry_count, 60)` seconds. A completion-notification outage leaves the job in `writing` with its already-created note; retry verifies/reuses that note instead of generating another. Exhausting the shared failure budget makes the job `failed`, even if a valid note was already written. Its audio and note remain available. Delivery of the **failure** notification has no separate attempt cap or deadline: it continues with backoff/idle polling, including after process restart, until an event ID is saved. Restoring notification service does not change a failed job back to completed. There is no exact-once guarantee.
+Default `VOICE_MAX_RETRIES=3` covers failures across archive, ASR, formatting, writing, and completion notification combined. Delay `min(2**retry_count, 60)` seconds.
+
+Completion notification unavailable? Job stays `writing`. Retries check and reuse the note. Exhausted budget marks `failed`, even with a valid note. Audio and note remain. Failure notifications retry with backoff/idle polling across restarts until an event ID is saved. No cap or deadline. Restored notifications do not complete failed jobs. No exactly-once guarantee.
 
 ## Validate the vault
 
-The installed package includes the existing read-only validator and its PyYAML/markdown-it-py dependencies. Run it from any directory; no source checkout, Hermes interpreter, service configuration, or fixed vault name is required:
+Installed package includes the read-only validator, PyYAML, and markdown-it-py. No source checkout, Hermes, service settings, or fixed vault name needed.
 
 ```sh
 "$HOME/.local/venvs/voice-note-intake/bin/voice-vault-lint" \
   --vault /absolute/canonical/path/to/YourVault
 ```
 
-Select the vault itself, not `Voice Inbox/` or `Voice Threads/`. The explicit root must already exist and be absolute/canonical: relative paths, `..`, symlink roots/ancestors and the filesystem root are refused rather than silently resolved. No absolute or relative per-note selectors are accepted. Descendant symlink directories and Markdown files and nonregular Markdown files are reported without following them.
+Select the existing vault root, not `Voice Inbox/` or `Voice Threads/`. Use its full canonical path. Rejects relative paths, `..`, symlink roots/ancestors, filesystem root, and individual-note selectors. Reports descendant symlink directories and symlink/nonregular Markdown files without following them.
 
-Validation retains the original **whole-vault** scope: all visible Markdown notes receive YAML/tag/heading/case-collision checks, with additional filename, timestamp and thread-link rules for direct `Voice Inbox/` and `Voice Threads/` members. Hidden files/directories remain excluded, and Excalidraw content remains exempt as before. An unrelated invalid note can therefore fail validation; this is intentional preservation of the previous lint-before-publication boundary, not an expansion of writable/stageable paths. The service still writes only to the existing voice directories.
+Checks all visible Markdown for YAML, tags, headings, and case collisions. Direct `Voice Inbox/` and `Voice Threads/` files also get filename, timestamp, and thread-link checks. Excludes hidden files/directories and exempts Excalidraw content. Unrelated invalid notes can block Git upload. Only voice files can be written or staged.
 
-Exit `0` means no findings; exit `1` lists actionable note paths/reasons; exit `2` reports an invalid boundary or invocation. Validation never changes files or runs Git. Opt-in publication below invokes this same installed validator.
+Exit `0`, no findings. Exit `1`, note paths and problems. Exit `2`, invalid path or command. Changes no files. Runs no Git. Git upload uses the same validator.
 
-## Opt-in vault Git publication
+## Optional vault Git upload
 
-Publication is disabled by default (`VOICE_VAULT_SYNC=false`); no remote is inferred or contacted. Git must be installed. Choose an existing **dedicated vault checkout**, not this project's source checkout, and an existing remote branch. The vault may be the repository root or a differently named visible subdirectory within it. Both paths must be existing absolute canonical directories, without symlink ancestors or `..`. Bare/worktree-indirected/nested checkouts and Git-metadata vault targets are refused.
+Default `VOICE_VAULT_SYNC=false`, no remote access or inferred remote. Install Git. Choose an existing dedicated note checkout and remote branch, never this source checkout. Vault may be the checkout root or any visible subdirectory. Both paths must be absolute, canonical, and existing, without symlink ancestors or `..`. Rejects bare, linked-worktree, nested checkouts, and vault paths in Git metadata.
 
 ```sh
 export VOICE_VAULT_SYNC=true
@@ -109,29 +117,40 @@ git -C "$VOICE_VAULT_REPO_DIR" config user.email "you@example.invalid"
 "$HOME/.local/venvs/voice-note-intake/bin/voice-note-vault-sync"
 ```
 
-`VOICE_VAULT_REMOTE` is required: an explicit HTTPS/SSH URL (not an `origin` name or SCP shorthand), or an absolute canonical local **bare** repository outside the selected checkout. No source-repository remote or private default key is selected. `VOICE_VAULT_BRANCH` defaults to `main`; checkout must be attached to that branch. Configure credentials before starting; Git terminal prompts, system/global Git config, ambient Git overrides, and local hooks are disabled for these operations. HTTPS auth therefore needs a repository-local credential helper or another preconfigured noninteractive mechanism. Optional `VOICE_VAULT_GIT_SSH_KEY` selects an explicit canonical regular file; it is passed as a quoted SSH argument with batch mode and `IdentitiesOnly=yes`. Without it, normal noninteractive SSH authentication applies. Do not embed credentials in remote URLs.
+`VOICE_VAULT_REMOTE` requires an HTTPS/SSH URL or full canonical path to a local bare repository outside the checkout. No `origin` name or SCP shorthand. No source remote or private default key selected. `VOICE_VAULT_BRANCH` defaults to `main`. Checkout must be on that branch. Never put credentials in URLs.
 
-The syncer retains full-vault lint before publication, temporary-stash protection, allowed fast-forward only, a normal non-force push, and exact remote branch HEAD read-back. Only direct visible `.md` files under `Voice Inbox/` and `Voice Threads/` with generated identity headers are stageable; local deletions are refused. Unrelated staged, unstaged, untracked and renamed paths, unrelated incoming/outgoing commits (even followed by reverts), divergence, invalid notes, active Git operations, and source-checkout targets are refused. The writer's exact untracked `Voice Inbox/.write.lock` is never stashed/staged. Normal notes elsewhere in the vault are linted but never staged. Preexisting user stashes are not discarded.
+Configure noninteractive credentials first. Git disables prompts, system/global config, environment overrides, and local hooks. HTTPS needs a repository-local credential helper or other preconfigured authentication. Optional `VOICE_VAULT_GIT_SSH_KEY` must name a canonical regular file. SSH quotes the path and uses batch mode with `IdentitiesOnly=yes`. Without it, normal noninteractive SSH authentication applies.
 
-The worker publishes **before** completion notification. A sync failure leaves an already-written note and retained audio, uses `lint_or_sync`, and consumes the existing shared retry budget. A terminal failure notification is not a completion notification or proof of publication. Health readiness does not probe remote connectivity or prove publication. Git subprocesses are bounded to 60 seconds individually, not a total-job deadline. Keep checkout Git access exclusive while intake publishes; its locks coordinate only intake processes, not other editors/Git clients.
+Upload checks the whole vault, protects pending changes in a temporary stash, permits only allowed fast-forwards, pushes without force, and verifies the exact remote branch commit. Stages only direct visible `.md` files with generated identity headers in `Voice Inbox/` and `Voice Threads/`. Other notes get checked, not staged. Never stashes or stages the writer's untracked `Voice Inbox/.write.lock`. Keeps user stashes.
 
-### Publication recovery
+Rejects local deletions, unrelated staged/unstaged/untracked/renamed files, unrelated incoming/outgoing commits even if reverted, diverged histories, invalid notes, active Git operations, and source-checkout targets.
 
-After any failure with temporary stashed data, `VOICE_STATE_DIR/vault-sync-recovery.json` and the stash are preserved; subsequent publication refuses until an operator resolves recovery. The record names the selected boundary, phase, stash object and local head/error. A crash during the stash command may leave the `stashing` record without a stash ID: inspect `git stash list` and its reflog, do not assume nothing was saved. Failed fetch/scope checks try to restore pending bytes/index without dropping the stash. Restore conflicts are not automatically resolved. A permitted remote fast-forward or successful local commit can remain after a later lint/push/read-back failure; there is no destructive rollback, reset, clean, force push, or automatic dropping of conflicted data.
+Worker uploads before completion notification. Sync failure keeps note/audio, reports `lint_or_sync`, and consumes shared retries. Failure notifications prove neither completion nor upload. Health does not check the remote or verify upload. Each Git command has a 60-second limit, not a total-job deadline. Stop other editors/Git clients during upload. Locks coordinate intake processes only.
 
-Stop intake before recovery. Back up the repository, private state record, conflicted worktree/index, and referenced stash (`git stash show --include-untracked --patch <stash-object>`). Inspect the record and `git status`/`git stash list`; resolve or manually apply the preserved stash in the selected repository, fix lint/scope/divergence, and compare local HEAD with the explicit remote branch. Do not use `stash pop` or drop any stash before saved content has been recovered and verified. Only after recovery is complete, archive/remove the recovery record and restart/retry. Preserve the backup evidence; a failed job stays failed and must not be relabeled completed just because Git later recovers.
+### Git recovery
+
+Interrupted stash? Intake keeps it and `VOICE_STATE_DIR/vault-sync-recovery.json`. Upload stops until manual recovery. Record names paths, phase, stash, local commit/error. A crash can leave phase `stashing` without a stash ID. Check `git stash list` and its reflog. Missing ID does not mean nothing was saved.
+
+Failed fetch/file-scope checks try to restore pending files/index, but keep the stash. Resolve conflicts manually. Allowed fast-forwards/local commits can remain after later check/push/verification failures. No destructive rollback, reset, clean, force push, or deletion of conflicted data.
+
+To recover:
+
+1. Stop intake. Back up repository, private recovery record, conflicted worktree/index, and stash. Inspect with `git stash show --include-untracked --patch <stash-object>`.
+2. Check record, `git status`, and `git stash list`. Resolve/apply the stash in the selected repository. Fix note checks, file scope, and diverged histories. Compare local HEAD with the selected remote branch.
+3. Verify all content recovered before `stash pop` or dropping stashes.
+4. Then archive/remove the recovery record and restart/retry. Keep backups. Failed jobs stay failed.
 
 ## Retention and scope
 
-The archive cap defaults to 5 GiB (`VOICE_ARCHIVE_MAX_BYTES=5368709120`) with no age expiry. It caps the tracked **completed** originals, deleting the oldest eligible completed originals first; it is not a hard filesystem quota. Active, failed, and unresolved/untracked recordings are excluded and can keep total disk use above the cap. Deletion outcomes are exposed by the job endpoint. Local state, spooled audio, transcripts, and notes are not removed by this policy. Set the cap to the value appropriate for your retention policy, monitor total disk use, and back up state/archive/vault separately.
+Default archive cap 5 GiB, `VOICE_ARCHIVE_MAX_BYTES=5368709120`. No age expiry. Deletes oldest tracked completed originals first, never active, failed, unresolved, or untracked recordings. Not a filesystem quota. Total use can exceed it. Job endpoint reports deletions. State, upload storage, transcripts, and notes remain.
 
-Read-only validation and opt-in Git publication use the explicitly selected vault boundary. Publication is off by default; never select a source-repository remote.
+Set the cap, monitor disk use, and back up state, archive, and vault separately. Checks and uploads use your selected vault. Git upload defaults off. Never use the source-repository remote.
 
 ## Verify the installation
 
-The installed-distribution controlled acceptance check is [`../tests/check_installed_intake.py`](../tests/check_installed_intake.py). It validates the complete HTTP flow against local controlled ASR/LLM/notification fixtures; it is not a substitute for acceptance against real inference services.
+[Installed-package test](../tests/check_installed_intake.py). HTTP upload to notes, with local ASR/LLM/notification substitutes.
 
-From the root of your cloned checkout, build and install outside the source tree, then run the single high-level check:
+From source root, build/install outside source:
 
 ```sh
 SOURCE_DIR="$(pwd -P)"
@@ -145,13 +164,13 @@ uv pip check --python "$CHECK_TMP/venv/bin/python"
   --work-dir "$CHECK_TMP/runs" --evidence "$CHECK_TMP/controlled-e2e.json"
 ```
 
-The check uses only ephemeral loopback fixture endpoints and fresh disposable paths. It includes abrupt restart after HTTP 202, identical/different-audio duplicate retries, controlled ASR/LLM HTTP 503 outages, invalid structured responses, notification failures/history recovery, protected-output refusal, and zero-cap retention with unfinished/failed/unresolved recordings. `VOICE_MAX_RETRIES=2` bounds the controlled failure scenarios. It also checks 27 installed-validator cases and publication against disposable local bare remotes (including refusal/recovery cases and the HTTP worker). Its JSON evidence labels controlled endpoints, not real inference or confirmed phone delivery; retained logs/state/stashes and absolute run paths are private evidence, not publication artifacts.
+Temporary loopback services and disposable paths. Tests abrupt restart after HTTP `202`, duplicate IDs with same/different audio, ASR/LLM `503` outages, invalid note JSON, notification failure/cache recovery, protected-output refusal, and zero-cap retention with unfinished/failed/unresolved recordings. Failure scenarios use `VOICE_MAX_RETRIES=2`. Also tests 27 validator cases and local Git upload, including rejection, recovery, and HTTP worker flow.
 
-The check exits with status `0` and writes a JSON result with `"result": "PASS"` when successful. Keep `CHECK_TMP` outside the source tree; `mktemp` honors your configured `TMPDIR`. Retain its JSON and private run logs when investigating a failure; do not commit them. For a standard-library venv/pip installation, replace the two uv installation commands with `python3.13 -m venv` and the environment's `python -m pip install` if your distribution provides ensurepip.
+Success exits `0`, writes JSON `"result": "PASS"`. Proves local test behavior, not real inference or phone delivery. Keep `CHECK_TMP` outside source. `mktemp` honors `TMPDIR`. Retain JSON/logs for failures. Paths, logs, state, and stashes are private. Do not commit them. Without uv, use `python3.13 -m venv` and that environment's `python -m pip install`, with ensurepip support.
 
-### Opt-in real-inference acceptance
+### Optional real-inference test
 
-Reuse the same external wheel installation and high-level check. Supply only operator-selected real ASR/LLM endpoints and a consented nonprivate known-speech WAV (a synthetic spoken reminder is suitable, silence is not). Do not use a private user recording. Choose semantic words present in the known speech rather than assuming an exact transcription/title. For example, a synthetic request to return library books tomorrow can use `return library books`; inspect temporal meaning manually because summaries may paraphrase tomorrow as the next day.
+Reuse the installed package/check. Choose real ASR/LLM services and approved, nonprivate WAV speech. Synthetic speech works. Silence/private recordings do not. Match key words, not exact transcript/title. Example reminder to return library books tomorrow, match `return library books`. Review time meaning manually. "The next day" may mean "tomorrow".
 
 ```sh
 export VOICE_ASR_URL='http://<your-asr-service>/v1/audio/transcriptions'
@@ -165,6 +184,8 @@ export VOICE_HTTP_TIMEOUT=60 VOICE_LLM_PRIMARY_TIMEOUT=60
   --work-dir "$CHECK_TMP/real-runs" --evidence "$CHECK_TMP/real-e2e.json"
 ```
 
-Real mode forwards the original WAV through the installed `ExternalClients` ASR client and the actual structured-output LLM prompt/schema. It does not serve controlled ASR/LLM responses and does not inherit fallback, production output/topic, credentials or publication settings. It creates an isolated loopback listener, private state, differently named canonical vault, and dedicated local bare Git remote. Only a loopback notification fixture is used: it refuses completion until the exact remote HEAD and note/thread bytes match, then captures the event for exact-ID read-back. Installed validation, standalone publication retry and read-only SQLite verification after process stop must pass. Two processing failures and the specified poll deadline bound the run; a real endpoint failure is a blocker, never a controlled-inference substitute.
+Real mode sends unchanged WAV through installed `ExternalClients` and the actual LLM prompt/schema. No fake inference or inherited backup model, live output/topic, credentials, or Git settings. Uses isolated loopback, private state, a differently named canonical vault, and dedicated local bare Git remote.
 
-All retained evidence is **private**, including synthesized media, transcripts, note/thread contents, endpoint configuration, logs and absolute paths. Publish only an allowlisted summary of artifact/source-tree digests, environment, sanitized command templates, check outcomes and limits. This run tests WAV on the selected services, not an iPhone recording codec, Shortcut/device transport, external ntfy service, phone display, fallback model, NFS or a production deployment.
+Local notification receiver requires exact remote commit and note/thread bytes before completion. Saves the event for exact-ID verification. Installed validator, standalone upload retry, and SQLite check after shutdown must pass. Stops at two processing failures or the polling deadline. Real-service failures block acceptance. Substitutes cannot replace real inference.
+
+Evidence is private, including synthetic audio, transcripts, notes/threads, service settings, logs, and full paths. Publish only reviewed checksums, environment, redacted command templates, results, and limits. Tests WAV on selected services, not iPhone codecs/uploads, Shortcuts, external ntfy, phone display, backup models, NFS, or live deployment.
