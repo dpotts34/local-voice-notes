@@ -798,10 +798,11 @@ def check(executable: Path, root: Path) -> None:
         if received.get("request_id") != request_id or received.get("sha256") != expected_hash:
             raise RuntimeError("accepted job metadata does not match the controlled upload")
         mark("multipart audio upload returns HTTP 202 after durable acceptance")
-        if Path(received["spool_path"]).read_bytes() != audio or not state.asr_entered.wait(timeout=5):
-            raise RuntimeError("acknowledged audio is not durable or controlled ASR did not start")
-        status, processing = request_json(base + "/v1/jobs/" + request_id)
-        if status != 200 or processing["status"] != "archived":
+        if Path(received["spool_path"]).read_bytes() != audio:
+            raise RuntimeError("acknowledged audio differs from the durable spool")
+        processing = wait_job(base, request_id, lambda j: state.asr_entered.is_set(),
+                              "controlled ASR did not start")
+        if processing["status"] != "archived":
             raise RuntimeError("controlled ASR gate did not hold the job during processing")
         other_audio = audio[:-2] + b"\x01\x00"
         for retry_audio in (audio, other_audio):
@@ -1111,8 +1112,8 @@ def check(executable: Path, root: Path) -> None:
         state.asr_entered.clear()
         state.asr_release.clear()
         accepted = submit(base, audio)
-        if not state.asr_entered.wait(timeout=5):
-            raise RuntimeError("unsafe-output scenario could not gate accepted job")
+        wait_job(base, accepted["request_id"], lambda j: state.asr_entered.is_set(),
+                 "unsafe-output scenario could not gate accepted job")
         inbox = vault_dir / "Voice Inbox"
         saved_inbox = vault_dir / "Saved Inbox"
         outside = root / "protected-output"
@@ -1148,9 +1149,9 @@ def check(executable: Path, root: Path) -> None:
         state.asr_entered.clear()
         state.asr_release.clear()
         active = submit(base, audio)
-        if not state.asr_entered.wait(timeout=5):
-            raise RuntimeError("retention could not gate active archived job")
-        active = wait_job(base, active["request_id"], lambda j: j["status"] == "archived", "active archive before retention")
+        active = wait_job(base, active["request_id"],
+                          lambda j: state.asr_entered.is_set() and j["status"] == "archived",
+                          "active archive before retention")
         queued = submit(base, audio)
         env["VOICE_ARCHIVE_MAX_BYTES"] = "0"
         restart()
