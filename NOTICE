@@ -5,6 +5,10 @@ Original project code, documentation, checks, speech proxies and local patch
 contributions are licensed under the Apache License, Version 2.0.
 Existing third-party material retains its own licenses and copyright notices.
 
+The transcript cleanup prompt is copied from OpenWhispr under the MIT License.
+Copyright (c) 2024 OpenWhispr Team
+The pinned source and full MIT notice are in THIRD_PARTY_NOTICES.md.
+
 The optional native patch supplied with the source release modifies
 NVIDIA NeMo-Speech.cpp, whose pinned source carries this attribution:
 Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.

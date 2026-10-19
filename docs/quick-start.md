@@ -78,6 +78,10 @@ curl --fail-with-body 'http://127.0.0.1:8791/v1/threads?limit=10'
 
 HTTP `202` means audio and SQLite job saved, not completed. Poll for `completed` or `failed`. Notes are create-only in `Voice Inbox/`. No unrelated files overwritten. `Voice Threads/<thread_id>.md` groups notes. Shared thread IDs do not give the LLM earlier conversation.
 
+Each new note ends with `# Transcript`. The model first cleans dictation with the [OpenWhispr prompt](https://github.com/OpenWhispr/openwhispr/blob/3577e5c9b2b06f7667a4b9d489935addba488341/src/locales/en/prompts.json), then makes the shorter note from that cleaned text. Code appends the cleaned transcript unchanged, outside the summarization step. Raw ASR text stays in `VOICE_STATE_DIR/transcripts/`. Existing notes stay unchanged. [Prompt credit and MIT terms](../THIRD_PARTY_NOTICES.md#openwhispr-cleanup-prompt).
+
+Cleanup and note formatting use the configured model and fallback, with the existing timeout per request. This adds a model call. Empty, invalid, oversized, or truncated cleanup output fails at `format`, retains raw text/audio, and consumes the shared retry budget. It never silently substitutes raw text. A cleaned transcript is not verbatim ASR. Review important names, numbers, and meaning against the raw text or recording.
+
 Completion/failure notifications contain a note path and summary, no audio or transcript. ntfy event-cache lookup reduces duplicates. No idempotency key, duplicates remain possible after cache expiry/truncation. Saved event IDs do not prove phone delivery.
 
 Default `VOICE_MAX_RETRIES=3` covers failures across archive, ASR, formatting, writing, and completion notification combined. Delay `min(2**retry_count, 60)` seconds.
