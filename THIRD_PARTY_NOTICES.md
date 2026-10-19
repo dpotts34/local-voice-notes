@@ -2,6 +2,34 @@
 
 Source only. Includes intake, two speech proxies, and one native patch. Upstream material keeps its licenses and notices.
 
+## OpenWhispr cleanup prompt
+
+`CLEANUP_PROMPT` in `src/voice_note_intake/clients.py` copies OpenWhispr's English `cleanupPrompt` unchanged. Source revision `3577e5c9b2b06f7667a4b9d489935addba488341`, `src/locales/en/prompts.json`.[70] This prompt keeps its MIT license, not project Apache-2.0. Full upstream notice follows.[71]
+
+```text
+MIT License
+
+Copyright (c) 2024 OpenWhispr Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## Python dependency and tooling credits
 
 ### Distribution boundary
@@ -171,3 +199,5 @@ Operators select external ASR, TTS, structured-LLM and notification services. "O
 [67] https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b/raw/ebe59e5a817142986528bbbee5dba8db7b38ed50/README.md
 [68] https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice/raw/85e237c12c027371202489a0ec509ded67b5e4b5/README.md
 [69] https://huggingface.co/Qwen/Qwen3-TTS-Tokenizer-12Hz/raw/7dd38ad4e9bad454aae9cd937d0cd577604fe229/README.md
+[70] https://github.com/OpenWhispr/openwhispr/blob/3577e5c9b2b06f7667a4b9d489935addba488341/src/locales/en/prompts.json
+[71] https://github.com/OpenWhispr/openwhispr/blob/3577e5c9b2b06f7667a4b9d489935addba488341/LICENSE
