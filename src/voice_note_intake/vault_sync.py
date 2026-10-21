@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import importlib
 import json
 import os
 from pathlib import Path
@@ -248,6 +249,31 @@ class VaultSync:
             os.close(lock_fd)
 
 
+def create_vault_sync(config):
+    if not config.vault_sync:
+        return None
+    factory_path = os.environ.get("VOICE_VAULT_SYNC_FACTORY")
+    factory = VaultSync
+    if factory_path is not None:
+        module_name, separator, attribute = factory_path.partition(":")
+        if not separator or not module_name or not attribute or ":" in attribute:
+            raise ValueError("VOICE_VAULT_SYNC_FACTORY must be formatted as module:callable")
+        try:
+            factory = getattr(importlib.import_module(module_name), attribute)
+        except (ImportError, AttributeError, ValueError) as error:
+            raise ValueError(f"VOICE_VAULT_SYNC_FACTORY could not resolve {factory_path!r}: {error}") from error
+        if not callable(factory):
+            raise ValueError(f"VOICE_VAULT_SYNC_FACTORY target {factory_path!r} is not callable")
+    return factory(
+        vault=config.vault_dir,
+        state_dir=config.state_dir,
+        repo=config.vault_repo_dir,
+        remote=config.vault_remote,
+        branch=config.vault_branch,
+        ssh_key=config.vault_git_ssh_key,
+    )
+
+
 def main() -> None:
     from .config import Config
 
@@ -255,9 +281,9 @@ def main() -> None:
     parser.parse_args()
     try:
         config = Config.from_env()
-        if config.vault_sync:
-            VaultSync(config.vault_dir, config.state_dir, config.vault_repo_dir,
-                      config.vault_remote, config.vault_branch, config.vault_git_ssh_key).run()
+        syncer = create_vault_sync(config)
+        if syncer is not None:
+            syncer.run()
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         parser.exit(1, f'vault publication refused: {error}\n')
 

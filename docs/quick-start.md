@@ -131,6 +131,12 @@ Rejects local deletions, unrelated staged/unstaged/untracked/renamed files, unre
 
 Worker uploads before completion notification. Sync failure keeps note/audio, reports `lint_or_sync`, and consumes shared retries. Failure notifications prove neither completion nor upload. Health does not check the remote or verify upload. Each Git command has a 60-second limit, not a total-job deadline. Stop other editors/Git clients during upload. Locks coordinate intake processes only.
 
+#### Custom sync factory
+
+With `VOICE_VAULT_SYNC=true`, `VOICE_VAULT_SYNC_FACTORY=module:callable` selects a Python callable instead of the built-in sync implementation. The module must be importable in the service environment. The callable receives these keyword arguments: `vault`, `state_dir`, `repo`, `remote`, `branch`, and `ssh_key`, using the configured values; it must return an object with a `run()` method. The same factory is used by the intake app and standalone sync command. Leave the variable unset to use the built-in implementation.
+
+Factories and their imported modules execute as trusted Python code with the service process's permissions. Only configure code you control and trust.
+
 ### Git recovery
 
 Interrupted stash? Intake keeps it and `VOICE_STATE_DIR/vault-sync-recovery.json`. Upload stops until manual recovery. Record names paths, phase, stash, local commit/error. A crash can leave phase `stashing` without a stash ID. Check `git stash list` and its reflog. Missing ID does not mean nothing was saved.

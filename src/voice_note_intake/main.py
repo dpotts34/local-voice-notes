@@ -15,7 +15,7 @@ from .mounts import archive_available
 from .spool import open_private_directory, private_directory_available
 from .worker import Worker
 from .writer import InboxWriter
-from .vault_sync import VaultSync
+from .vault_sync import create_vault_sync
 
 CLIENTS_KEY = web.AppKey("clients", ExternalClients)
 WORKER_KEY = web.AppKey("worker", Worker)
@@ -88,8 +88,7 @@ async def _lifecycle(app: web.Application) -> AsyncIterator[None]:
 
 def create_app(config: Config | None = None) -> web.Application:
     config = config or Config.from_env()
-    syncer = VaultSync(config.vault_dir, config.state_dir, config.vault_repo_dir,
-                       config.vault_remote, config.vault_branch, config.vault_git_ssh_key) if config.vault_sync else None
+    syncer = create_vault_sync(config)
     for path, label in ((config.state_dir, "state"), (config.state_dir / "spool", "spool")):
         os.close(open_private_directory(path, create=True, label=label))
     store = JobStore(config.state_dir / "jobs.sqlite3")
